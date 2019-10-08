@@ -3,7 +3,7 @@ version 18
 __lua__
 --main
 function _init()	
-	player=make_player(32,32,5)
+	player=make_player(16,64,5)
 end
 
 function _update60()
@@ -14,33 +14,65 @@ function _draw()
 	cls()
 	map(0,0,0,0,128,128)
 	player:draw()
-	print(player.current_anim)
-	print(player.dy)
 end
 
 -->8
 --player
 
--- create a player
--- x -- x position
--- y -- y position
--- l -- lifes
--- @return p new player
+--create a player
+--x -- x position
+--y -- y position
+--l -- lifes
+--@return p new player
 function make_player(x,y,l)
+	local anims={
+		["idle"]={
+			ticks=1,
+			frames={1},
+			loop=true,
+		},
+		["block"]={
+			ticks=1,
+			frames={2},
+			loop=true,
+		},
+		["attack"]={ --btn(4)
+			ticks=4,
+			frames={9,10,11,12},
+			loop=false,
+		},
+		["move"]={ --btn(0) and btn(1)
+			ticks=4,
+			frames={3,4,5,6},
+			loop=true,
+		},
+		["jump"]={ --btn(5)
+			ticks=1,
+			frames={7},
+			loop=true,
+		},
+		["fall"]={
+			ticks=1,
+			frames={8},
+			loop=true,
+		},
+	}
 	local p=make_actor(8,8,x,y)
+	ap=make_animation_player(anims,"idle")
 	
-	-- player properties
+	--player properties
 	p.score=0
 	p.lives=l
 	
 	
-	-- player states
+	--player states
 	p.is_alive=true
 	p.is_blocking=false
 	p.is_jumping=false
+	p.flipx=false
 	
 	
-	-- jump properties
+	--jump properties
 	p.jump_speed=-1.75 	-- velocity
 	p.jump_hold_time=0		--	how long jump is held
 	p.min_jump_pressed=5		--	min time jump can be held
@@ -49,14 +81,14 @@ function make_player(x,y,l)
 	p.grouned=false
 	p.moving=false
 	p.airtime=0
+	
 
-
-	-- check for collision 
-	-- at multiple points 
-	-- along the top
-	-- of the sprite: 
-	-- left, center, and right.
-	-- collide with flag 0
+	--check for collision 
+	--at multiple points 
+	--along the top
+	--of the sprite: 
+	--left, center, and right.
+	--collide with flag 0
 	p.collide_roof=function(self)
 		for i=-(self.w/3),(self.w/3),2 do
 			if fget(mget((self.x+i)/8,(self.y-(self.h/2))/8),0) then
@@ -67,65 +99,7 @@ function make_player(x,y,l)
 		end
 	end
 
-
-	-- animations
-	p.current_anim="idle"
-	p.current_frame=1
-	p.anim_tick=0
-	p.flipx=false
-	p.anims={
-		["idle"]={
-			ticks=1,
-			frames={1}
-		},
-		["block"]={
-			ticks=1,
-			frames={2}
-		},
-		["move"]={
-			ticks=4,
-			frames={3,4,5,6}
-		},
-		["jump"]={
-			ticks=1,
-			frames={7}
-		},
-		["fall"]={
-			ticks=1,
-			frames={8}
-		}
-	}
-
-	-- set new anims
-	p.set_anim=function(self,anim)
-		if(anim==self.current_anim) return
-		
-		local a=self.anims[anim]
-		self.anim_tick=a.ticks			
-		self.current_anim=anim		
-		self.current_frame=1
-	end
-
-
-	-- update tick (anim frames)
-	p.compute_tick=function(self)
-		self.anim_tick-=1
-		
-		if self.anim_tick<=0 then
-			self.current_frame+=1
-			local a=self.anims[self.current_anim]
-			
-			self.anim_tick=a.ticks--reset timer
-			
-			if self.current_frame>#a.frames then
-					self.current_frame=1--loop
-			end
-		
-		end	
-	end
-	
-	
-	-- actions
+	--actions
 	p.jump_button={
 		update=function(self)
 			self.is_pressed=false
@@ -149,13 +123,14 @@ function make_player(x,y,l)
 		is_down=false,				-- currently down
 		ticks_down=0,					-- how long down
 	}	
+
 	
 	p.jump=function(self)
 		if not self:collide_floor() then
 			if self.dy<0 then
-				self:set_anim("jump")
+				ap:set_anim("jump")
 			elseif self.dy>0 then
-				self:set_anim("fall")
+				ap:set_anim("fall")
 			end
 			self.grounded=false
 			self.airtime+=1
@@ -178,8 +153,73 @@ function make_player(x,y,l)
 		end
 	end
 	
+		
+	--attack properties
+	p.slash_sfx={
+		draw=function(self)
+			if(self.active==false) return
+			
+			if self.frame==self.ticks then
+				self.frame=0
+			end
+			
+			spr(
+				self.sprites[self.frame],
+				4,
+				4,
+				self.width,
+				self.heigth
+			)
+			frame+=1
+		end,
+		
+		-- state
+		active=false,
+		ticks=2,
+		frame=0,
+		width=2,
+		height=2,
+		sprites={32,34},
+	}
 	
-	-- make player move left/right
+	
+	p.attack_button={
+		update=function(self)
+			self.is_pressed=false
+	
+			if btn(4) then
+				if not self.is_down then
+					self.is_pressed=true
+				end
+				
+				self.is_down=true
+			else
+				self.is_pressed=false
+				self.is_down=false
+			end
+		end,
+			
+		--state
+		is_pressed=false,
+		is_down=false,
+	}	
+	
+
+	--make player attack
+	p.attack=function(self)
+		if(self:collide_floor()==false) return
+	
+		if self.attack_button.is_pressed then
+			ap:set_anim("attack")
+			self.keep_playing = true
+		else
+			self.is_attacking=false
+		end
+		
+	end
+	
+	
+	--make player move left/right
 	p.move=function(self)
 		local btn_left=btn(0)
 		local btn_right=btn(1)
@@ -189,7 +229,7 @@ function make_player(x,y,l)
 			self.moving=true
 			self.flipx=true
 			
-			self:set_anim("move")
+			ap:set_anim("move")
 			
 			btn_right=false
 		elseif btn_right==true then
@@ -197,27 +237,25 @@ function make_player(x,y,l)
 			self.moving=true
 			self.flipx=false
 			
-			self:set_anim("move")
+			ap:set_anim("move")
 			
 			btn_left=false
 		else
 			self.moving=false
 			self.dx*=self.dcc
-			if self.grounded then
-				self:set_anim("idle")
+			if self.grounded and not self.is_attacking then
+				ap:set_anim("idle")
 			end
 		end
 		
 		--limit walk speed
 		self.dx=mid(-self.max_dx,self.dx,self.max_dx)
 		self.x+=self.dx
-		
-		-- side collision
 		p:collide_side(self)
 	end
 
 
-	-- gravity
+	--gravity
 	p.compute_gravity=function(self)
 		if(self:collide_floor()==true) return
 		self.dy+=self.grav
@@ -226,21 +264,24 @@ function make_player(x,y,l)
 	end	
 	
 	
-	-- update game loop
+	--update game loop
 	p.update=function(self)
+		self:compute_gravity()
 		self.jump_button:update()
 		self:jump()
 		self:collide_roof()
-		self:compute_gravity()
 		self:move()
-		self:compute_tick()
+		self.attack_button:update()
+		self:attack()
+
+		ap:play(self)
 	end
 	
 	
-	-- game loop functions
+	--game loop functions
 	p.draw=function(self)
-		local a=self.anims[self.current_anim]
-		local frame=a.frames[self.current_frame]
+		local a=ap.anims[ap.current_anim]
+		local frame=a.frames[ap.current_frame]
 		spr(
 			frame,
 			self.x-(self.w/2),
@@ -256,39 +297,42 @@ end
 -->8
 --actor
 
--- generic actor properties
--- w: width
--- h: height
--- x: x pos
--- y: y pos
+--generic actor properties
+--w: width
+--h: height
+--x: x pos
+--y: y pos
 function make_actor(w,h,x,y)
 	local a={}
 	
-	-- size
+	--size
 	a.w=w
 	a.h=h
 	
-	-- movement
-	a.x=x 					-- x position
-	a.y=y 					-- y position
-	a.dx=0					-- x direction speed
-	a.dy=0					-- y direction speed
-	a.max_dx=1	-- x direction speed
-	a.max_dy=1	-- y direction speed
+	--movement
+	a.x=x 					--x position
+	a.y=y 					--y position
+	a.dx=0					--x direction speed
+	a.dy=0					--y direction speed
+	a.max_dx=1	--x direction speed
+	a.max_dy=1	--y direction speed
 	
 	-- physic
-	a.grav=0.20 	-- gravity
-	a.acc=0.05			-- accelaration
-	a.dcc=0.01			-- deceleration
-	a.air_dcc=0.8-- air decceleration
+	a.grav=0.20 	--gravity
+	a.acc=0.05			--accelaration
+	a.dcc=0.01			--deceleration
+	a.air_dcc=0.8--air decceleration
 
+	--actor state
+	a.is_attacking=false
 	
-	-- check for collision 
-	-- at multiple points 
-	-- along the bottom
-	-- of the sprite: 
-	-- left, center, and right.
-	-- collide with flag 0, 1
+
+	--check for collision 
+	--at multiple points 
+	--along the bottom
+	--of the sprite: 
+	--left, center, and right.
+	--collide with flag 0, 1
 	a.collide_floor=function(self)
 	
 		if self.dy<0 then
@@ -312,30 +356,97 @@ function make_actor(w,h,x,y)
 	end
 	
 	
-	-- check for collision 
-	-- at multiple points 
-	-- along the side
-	-- of the sprite: 
-	-- bottom, center, and top.
-	-- collide with flag 0
+	--check for collision 
+	--at multiple points 
+	--along the side
+	--of the sprite: 
+	--bottom, center, and top.
+	--collide with flag 0
 	a.collide_side=function(self)
 		local offset=self.w/3
 		for i=-(self.w/3),(self.w/3),2 do
-				if fget(mget((self.x+(offset))/8,(self.y+i)/8),0) then
-					self.dx=0
-					self.x=(flr(((self.x+(offset))/8))*8)-(offset)
-					return true
-				end
-				if fget(mget((self.x-(offset))/8,(self.y+i)/8),0) then
-					self.dx=0
-					self.x=(flr((self.x-(offset))/8)*8)+8+(offset)
-					return true
-				end
+			if fget(mget((self.x+(offset))/8,(self.y+i)/8),0) then
+				self.dx=0
+				self.x=(flr(((self.x+(offset))/8))*8)-(offset)
+				return true
+			end
+			if fget(mget((self.x-(offset))/8,(self.y+i)/8),0) then
+				self.dx=0
+				self.x=(flr((self.x-(offset))/8)*8)+8+(offset)
+				return true
+			end
 		end
 		return false
 	end
 	
 	return a
+end
+-->8
+--animation_player
+function make_animation_player(a,c)
+	local ap={}
+
+	--props
+	ap.anims=a
+	ap.current_anim=c
+	ap.current_frame=1
+	ap.anim_tick=0
+	ap.play_once=false
+
+	--select new animation
+	--@param anim string
+	ap.set_anim=function(self,anim)
+		if(anim==self.current_anim) return
+		if(self.play_once) return
+		
+		local a=self.anims[anim]
+		self.anim_tick=a.ticks			
+		self.current_anim=anim		
+		self.current_frame=1
+	end
+
+
+	ap.play=function(self)
+		local loop=self.anims[self.current_anim].loop
+
+		if loop then
+			self:loop()
+		else
+			self:once()
+		end
+	end
+
+	ap.once=function(self)
+		self.play_once=true
+		self.anim_tick-=1
+		if self.anim_tick<=0 then
+			local a=self.anims[self.current_anim]
+			self.current_frame+=1
+			
+			self.anim_tick=a.ticks--reset timer
+			
+			if self.current_frame>#a.frames then
+				self.current_frame=1--loop
+				self.play_once=false
+			end
+		end	
+	end
+
+	--keep playing animation until a new one is set
+	ap.loop=function(self)
+		self.anim_tick-=1
+		if self.anim_tick<=0 then
+			local a=self.anims[self.current_anim]
+			self.current_frame+=1
+			
+			self.anim_tick=a.ticks--reset timer
+			
+			if self.current_frame>#a.frames then
+				self.current_frame=1--loop
+			end
+		end	
+	end
+	return ap
 end
 __gfx__
 00000000070000000700000007000000007000000007000000700000070000000700000000070000000070000000000000000000000000000000000000000000
