@@ -24,42 +24,49 @@ end
 --y -- y position
 --l -- lifes
 --@return p new player
-function make_player(x,y,l)
-	local anims={
+function make_player(px,py,l)
+	local p=make_actor(8,8,px,py)
+	local ap=make_animation_player({
 		["idle"]={
 			ticks=1,
 			frames={1},
-			loop=true,
+			loop=true
 		},
 		["block"]={
 			ticks=1,
 			frames={2},
-			loop=true,
+			loop=true
 		},
 		["attack"]={ --btn(4)
 			ticks=4,
 			frames={9,10,11,12},
-			loop=false,
+			loop=false
 		},
 		["move"]={ --btn(0) and btn(1)
 			ticks=4,
 			frames={3,4,5,6},
-			loop=true,
+			loop=true
 		},
 		["jump"]={ --btn(5)
 			ticks=1,
 			frames={7},
-			loop=true,
+			loop=true
 		},
 		["fall"]={
 			ticks=1,
 			frames={8},
-			loop=true,
-		},
-	}
-	local p=make_actor(8,8,x,y)
-	ap=make_animation_player(anims,"idle")
-	
+			loop=true
+		}
+	},"idle")
+	local slash_ap=make_animation_player({
+		["slash"]={
+			ticks=4,
+			frames={32,32,34,34},
+			loop=false
+		}
+	},"slash")
+	local hitbox=make_hitbox(0,2,16,16)
+
 	--player properties
 	p.score=0
 	p.lives=l
@@ -70,6 +77,7 @@ function make_player(x,y,l)
 	p.is_blocking=false
 	p.is_jumping=false
 	p.flipx=false
+	p.slash_active=false
 	
 	
 	--jump properties
@@ -81,7 +89,7 @@ function make_player(x,y,l)
 	p.grouned=false
 	p.moving=false
 	p.airtime=0
-	
+
 
 	--check for collision 
 	--at multiple points 
@@ -99,7 +107,7 @@ function make_player(x,y,l)
 		end
 	end
 
-	--actions
+	--btn(5), should manage jump input
 	p.jump_button={
 		update=function(self)
 			self.is_pressed=false
@@ -121,10 +129,11 @@ function make_player(x,y,l)
 		--state
 		is_pressed=false,	-- pressed this frame
 		is_down=false,				-- currently down
-		ticks_down=0,					-- how long down
+		ticks_down=0					-- how long down
 	}	
 
 	
+	--should make the player jump
 	p.jump=function(self)
 		if not self:collide_floor() then
 			if self.dy<0 then
@@ -153,36 +162,9 @@ function make_player(x,y,l)
 		end
 	end
 	
-		
-	--attack properties
-	p.slash_sfx={
-		draw=function(self)
-			if(self.active==false) return
-			
-			if self.frame==self.ticks then
-				self.frame=0
-			end
-			
-			spr(
-				self.sprites[self.frame],
-				4,
-				4,
-				self.width,
-				self.heigth
-			)
-			frame+=1
-		end,
-		
-		-- state
-		active=false,
-		ticks=2,
-		frame=0,
-		width=2,
-		height=2,
-		sprites={32,34},
-	}
 	
-	
+	--btn(4) will make the player
+	--attack
 	p.attack_button={
 		update=function(self)
 			self.is_pressed=false
@@ -201,18 +183,21 @@ function make_player(x,y,l)
 			
 		--state
 		is_pressed=false,
-		is_down=false,
+		is_down=false
 	}	
 	
 
-	--make player attack
+	--instanciate a hitbox and play the
+	--player attack animation
 	p.attack=function(self)
 		if(self:collide_floor()==false) return
 	
 		if self.attack_button.is_pressed then
 			ap:set_anim("attack")
-			self.keep_playing = true
-		else
+			slash_ap:set_anim("slash")
+			self.is_attacking=true
+			self.slash_active=true
+		elseif self.is_attacking and ap.finished then
 			self.is_attacking=false
 		end
 		
@@ -274,22 +259,30 @@ function make_player(x,y,l)
 		self.attack_button:update()
 		self:attack()
 
-		ap:play(self)
+		--update animation player
+		ap:play()
+		if self.slash_active then
+			slash_ap:play()
+			if slash_ap.finished then
+				self.slash_active=false
+			end
+		end
 	end
 	
 	
 	--game loop functions
 	p.draw=function(self)
-		local a=ap.anims[ap.current_anim]
-		local frame=a.frames[ap.current_frame]
-		spr(
-			frame,
-			self.x-(self.w/2),
-			self.y-(self.h/2),
-			self.w/8,self.h/8,
-			self.flipx,
-			false
-		)
+		local x=self.x
+		local y=self.y
+		local fx=self.flipx
+
+		--player
+		ap:draw(x,y,self.w,self.h,fx)
+
+		--slash
+		if self.slash_active then
+			slash_ap:draw(x,y,16,16,fx)
+		end
 	end
 	
 	return p
@@ -310,18 +303,18 @@ function make_actor(w,h,x,y)
 	a.h=h
 	
 	--movement
-	a.x=x 					--x position
-	a.y=y 					--y position
-	a.dx=0					--x direction speed
-	a.dy=0					--y direction speed
-	a.max_dx=1	--x direction speed
-	a.max_dy=1	--y direction speed
+	a.x=x --x position
+	a.y=y --y position
+	a.dx=0 --x direction speed
+	a.dy=0 --y direction speed
+	a.max_dx=1 --x direction speed
+	a.max_dy=1 --y direction speed
 	
 	-- physic
-	a.grav=0.20 	--gravity
-	a.acc=0.05			--accelaration
-	a.dcc=0.01			--deceleration
-	a.air_dcc=0.8--air decceleration
+	a.grav=0.20 --gravity
+	a.acc=0.05 --accelaration
+	a.dcc=0.01 --deceleration
+	a.air_dcc=0.8 --air decceleration
 
 	--actor state
 	a.is_attacking=false
@@ -383,6 +376,8 @@ function make_actor(w,h,x,y)
 end
 -->8
 --animation_player
+--@param a anims table
+--@param c current_anim
 function make_animation_player(a,c)
 	local ap={}
 
@@ -391,13 +386,32 @@ function make_animation_player(a,c)
 	ap.current_anim=c
 	ap.current_frame=1
 	ap.anim_tick=0
-	ap.play_once=false
+	ap.finished=false
+
+	--draw sprite
+	--@param x position
+	--@param y position
+	--@param w width
+	--@param h height
+	--@param fx flipx
+	ap.draw=function(self,x,y,w,h,fx)
+		-- local a=self.anims[self.current_anim]
+		local frame=self.anims[self.current_anim].frames[self.current_frame]
+		spr(
+			frame,
+			x-(w/2),
+			y-(h/2),
+			w/8,h/8,
+			fx,
+			false
+		)
+	end
+	
 
 	--select new animation
 	--@param anim string
 	ap.set_anim=function(self,anim)
 		if(anim==self.current_anim) return
-		if(self.play_once) return
 		
 		local a=self.anims[anim]
 		self.anim_tick=a.ticks			
@@ -406,34 +420,37 @@ function make_animation_player(a,c)
 	end
 
 
+	--should manage what kind of animation this is
 	ap.play=function(self)
-		local loop=self.anims[self.current_anim].loop
-
-		if loop then
+		if self.anims[self.current_anim].loop then
 			self:loop()
 		else
 			self:once()
 		end
 	end
 
+
+	--should play all the animation frame one
 	ap.once=function(self)
-		self.play_once=true
+		self.finished=false
 		self.anim_tick-=1
 		if self.anim_tick<=0 then
 			local a=self.anims[self.current_anim]
 			self.current_frame+=1
 			
-			self.anim_tick=a.ticks--reset timer
+			self.anim_tick=a.ticks
 			
 			if self.current_frame>#a.frames then
-				self.current_frame=1--loop
-				self.play_once=false
+				self.current_frame=1
+				self.finished=true
 			end
 		end	
 	end
 
-	--keep playing animation until a new one is set
+
+	--loop throught all animation frame until a new animation
 	ap.loop=function(self)
+		self.finished=true
 		self.anim_tick-=1
 		if self.anim_tick<=0 then
 			local a=self.anims[self.current_anim]
@@ -447,6 +464,27 @@ function make_animation_player(a,c)
 		end	
 	end
 	return ap
+end
+-->8
+--hitbox
+
+--create a damage zone
+--@param f flag
+--@param t ticks
+--@param w width
+--@param h height
+function make_hitbox(f,t,w,h)
+	local hb={}
+	hb.flag=f
+	hb.ticks=t
+	hb.w=w
+	hb.h=h
+
+	hb.draw=function(self,active,x,y)
+		if(not active) return
+	end
+	
+	return hb
 end
 __gfx__
 00000000070000000700000007000000007000000007000000700000070000000700000000070000000070000000000000000000000000000000000000000000
