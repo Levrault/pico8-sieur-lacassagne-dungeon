@@ -61,7 +61,7 @@ function make_player(px,py,l)
 	local slash_ap=make_animation_player({
 		["slash"]={
 			ticks=4,
-			frames={32,32,34,34},
+			frames={32,32,34},
 			loop=false
 		}
 	},"slash")
