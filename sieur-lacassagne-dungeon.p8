@@ -77,7 +77,6 @@ function make_player(px,py,l)
 	p.is_alive=true
 	p.is_blocking=false
 	p.is_jumping=false
-	p.flipx=false
 	p.slash_active=false
 	
 	
@@ -207,27 +206,16 @@ function make_player(px,py,l)
 	
 	--make player move left/right
 	p.move=function(self)
-		local btn_left=btn(0)
-		local btn_right=btn(1)
-		
-		if btn_left==true then
-			self.lx=-1
+		--left
+		if btn(0) then
+			self:motion(-1)
 			self.dx=self.speed*self.lx
-			self.moving=true
-			self.flipx=true
-			
 			ap:set_anim("move")
-			
-			btn_right=false
-		elseif btn_right==true then
-			self.lx=1
+		--right
+		elseif btn(1) then
+			self:motion(1)
 			self.dx=self.speed*self.lx
-			self.moving=true
-			self.flipx=false
-			
 			ap:set_anim("move")
-			
-			btn_left=false
 		else
 			self.moving=false
 			self.dx=0
@@ -304,6 +292,7 @@ function make_actor(w,h,x,y)
 	--size
 	a.w=w
 	a.h=h
+	a.flipx=false
 	
 	--movement
 	a.x=x --x position
@@ -321,6 +310,15 @@ function make_actor(w,h,x,y)
 
 	--actor state
 	a.is_attacking=false
+	
+	
+	--set motion props
+	--@param d direction
+	a.motion=function(self,d)
+		self.lx=d
+		self.moving=true
+		self.flipx=d==-1
+	end
 	
 
 	--check for collision 
