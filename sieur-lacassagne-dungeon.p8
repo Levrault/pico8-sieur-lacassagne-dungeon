@@ -14,15 +14,16 @@ function _draw()
 	cls()
 	map(0,0,0,0,128,128)
 	player:draw()
+	print(player.dx)
 end
 
 -->8
 --player
 
 --create a player
---x -- x position
---y -- y position
---l -- lifes
+--px -- x position
+--py -- y position
+--l	 -- lifes
 --@return p new player
 function make_player(px,py,l)
 	local p=make_actor(8,8,px,py)
@@ -210,7 +211,8 @@ function make_player(px,py,l)
 		local btn_right=btn(1)
 		
 		if btn_left==true then
-			self.dx-=self.acc
+			self.lx=-1
+			self.dx=self.speed*self.lx
 			self.moving=true
 			self.flipx=true
 			
@@ -218,7 +220,8 @@ function make_player(px,py,l)
 			
 			btn_right=false
 		elseif btn_right==true then
-			self.dx+=self.acc
+			self.lx=1
+			self.dx=self.speed*self.lx
 			self.moving=true
 			self.flipx=false
 			
@@ -227,13 +230,13 @@ function make_player(px,py,l)
 			btn_left=false
 		else
 			self.moving=false
-			self.dx*=self.dcc
+			self.dx=0
 			if self.grounded and not self.is_attacking then
 				ap:set_anim("idle")
 			end
 		end
 		
-		--limit walk speed
+		--limit move speed
 		self.dx=mid(-self.max_dx,self.dx,self.max_dx)
 		self.x+=self.dx
 		p:collide_side(self)
@@ -308,13 +311,13 @@ function make_actor(w,h,x,y)
 	a.dx=0 --x direction speed
 	a.dy=0 --y direction speed
 	a.max_dx=1 --x direction speed
-	a.max_dy=1 --y direction speed
+	a.max_dy=2 --y direction speed
 	
 	-- physic
+	a.lx=1 --look direction
 	a.grav=0.20 --gravity
-	a.acc=0.05 --accelaration
-	a.dcc=0.01 --deceleration
-	a.air_dcc=0.8 --air decceleration
+	a.speed=85 --accelaration
+	a.air_dcc=0.85 --air decceleration
 
 	--actor state
 	a.is_attacking=false
@@ -485,6 +488,23 @@ function make_hitbox(f,t,w,h)
 	end
 	
 	return hb
+end
+-->8
+--enemy
+
+--create a player
+--px -- x position
+--py -- y position
+--l	 -- lifes
+--@return e new enemy
+function make_enemy(px,py)
+	local e=make_actor({8,8,px,py})
+	
+	//state
+	e.alive=true
+	e.dx=1
+	
+	return e
 end
 __gfx__
 00000000070000000700000007000000007000000007000000700000070000000700000000070000000070000000000000000000000000000000000000000000
