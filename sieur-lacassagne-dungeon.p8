@@ -3,17 +3,20 @@ version 18
 __lua__
 --main
 function _init()	
-	player=make_player(16,64,5)
+	player=make_player(82,80,5)
+	bat=make_bat(92,80)
 end
 
 function _update60()
 	player:update()
+	bat:update()
 end
 
 function _draw()
 	cls()
 	map(0,0,0,0,128,128)
 	player:draw()
+	bat:draw()
 end
 -->8
 --actor
@@ -377,18 +380,53 @@ end
 --enemy
 
 --create a player
+--w -- width
+--h -- height
 --px -- x position
 --py -- y position
+--hu -- hurtbox object params {w,h}
 --l	 -- lifes
+--anims --anims object {lists, current}
 --@return e new enemy
-function make_enemy(px,py)
-	local e=make_actor({8,8,px,py})
+function make_enemy(w,h,px,py,hu,anims)
+	local e=make_actor(w,h,px,py)
 	
-	//state
+	--state
+	local hurtbox=make_hurtbox(3,hu.w,hu.h)
+	local ap=make_animation_player(anims.a,anims.c)
 	e.alive=true
-	e.dx=1
+
+	e.update=function(self)
+		ap:play()
+	end
+
+	e.draw=function(self)
+		ap:draw(self.x,self.y,self.w,self.h,self.flipx)
+	end
 	
 	return e
+end
+
+function make_bat(px,py)
+	local b=make_enemy(
+		8,
+		8,
+		px,
+		py,
+		{w=8,h=8},
+		{
+			a={
+				["fly"]={
+					ticks=5,
+					frames={64,65,66,67,68},
+					loop=true
+				}
+			},
+			c="fly"
+		}
+	)
+	
+	return b
 end
 -->8
 --animation_player
@@ -484,12 +522,33 @@ end
 -->8
 --hitbox
 
---create a damage zone
+--should damage an actor when colliding with a hurtbox
 --@param f flag
 --@param t ticks
 --@param w width
 --@param h height
 function make_hitbox(f,t,w,h)
+	local hb={}
+	hb.flag=f
+	hb.ticks=t
+	hb.w=w
+	hb.h=h
+
+	hb.draw=function(self,active,x,y)
+		if(not active) return
+	end
+	
+	return hb
+end
+-->8
+--hurtbox
+
+--represente the zone where an actor can 
+--receive damage
+--@param f flag
+--@param w width
+--@param h height
+function make_hurtbox(f,w,h)
 	local hb={}
 	hb.flag=f
 	hb.ticks=t
