@@ -14,9 +14,104 @@ function _draw()
 	cls()
 	map(0,0,0,0,128,128)
 	player:draw()
-	print(player.dx)
 end
+-->8
+--actor
 
+--generic actor properties
+--w: width
+--h: height
+--x: x pos
+--y: y pos
+function make_actor(w,h,x,y)
+	local a={}
+	
+	--size
+	a.w=w
+	a.h=h
+	a.flipx=false
+	
+	--movement
+	a.x=x --x position
+	a.y=y --y position
+	a.dx=0 --x direction speed
+	a.dy=0 --y direction speed
+	a.max_dx=1 --x direction speed
+	a.max_dy=2 --y direction speed
+	
+	-- physic
+	a.lx=1 --look direction
+	a.grav=0.20 --gravity
+	a.speed=85 --accelaration
+	a.air_dcc=0.85 --air decceleration
+
+	--actor state
+	a.is_attacking=false
+	
+	
+	--set motion props
+	--@param d direction
+	a.motion=function(self,d)
+		self.lx=d
+		self.moving=true
+		self.flipx=d==-1
+	end
+	
+
+	--check for collision 
+	--at multiple points 
+	--along the bottom
+	--of the sprite: 
+	--left, center, and right.
+	--collide with flag 0, 1
+	a.collide_floor=function(self)
+	
+		if self.dy<0 then
+			return false
+		end
+		
+		local landed=false
+
+		for i=-(self.w/3),(self.w/3),2 do
+			local tile=mget((self.x+i)/8,(self.y+(self.h/2))/8)
+			if fget(tile,0) or (fget(tile,1) and self.dy>=0) then
+				self.dy=0
+				self.y=(flr((self.y+(self.h/2))/8)*8)-(self.h/2)
+				self.grounded=true
+				self.airtime=0
+				landed=true
+			end
+		end
+		
+		return landed
+	end
+	
+	
+	--check for collision 
+	--at multiple points 
+	--along the side
+	--of the sprite: 
+	--bottom, center, and top.
+	--collide with flag 0
+	a.collide_side=function(self)
+		local offset=self.w/3
+		for i=-(self.w/3),(self.w/3),2 do
+			if fget(mget((self.x+(offset))/8,(self.y+i)/8),0) then
+				self.dx=0
+				self.x=(flr(((self.x+(offset))/8))*8)-(offset)
+				return true
+			end
+			if fget(mget((self.x-(offset))/8,(self.y+i)/8),0) then
+				self.dx=0
+				self.x=(flr((self.x-(offset))/8)*8)+8+(offset)
+				return true
+			end
+		end
+		return false
+	end
+	
+	return a
+end
 -->8
 --player
 
@@ -279,101 +374,21 @@ function make_player(px,py,l)
 	return p
 end
 -->8
---actor
+--enemy
 
---generic actor properties
---w: width
---h: height
---x: x pos
---y: y pos
-function make_actor(w,h,x,y)
-	local a={}
+--create a player
+--px -- x position
+--py -- y position
+--l	 -- lifes
+--@return e new enemy
+function make_enemy(px,py)
+	local e=make_actor({8,8,px,py})
 	
-	--size
-	a.w=w
-	a.h=h
-	a.flipx=false
+	//state
+	e.alive=true
+	e.dx=1
 	
-	--movement
-	a.x=x --x position
-	a.y=y --y position
-	a.dx=0 --x direction speed
-	a.dy=0 --y direction speed
-	a.max_dx=1 --x direction speed
-	a.max_dy=2 --y direction speed
-	
-	-- physic
-	a.lx=1 --look direction
-	a.grav=0.20 --gravity
-	a.speed=85 --accelaration
-	a.air_dcc=0.85 --air decceleration
-
-	--actor state
-	a.is_attacking=false
-	
-	
-	--set motion props
-	--@param d direction
-	a.motion=function(self,d)
-		self.lx=d
-		self.moving=true
-		self.flipx=d==-1
-	end
-	
-
-	--check for collision 
-	--at multiple points 
-	--along the bottom
-	--of the sprite: 
-	--left, center, and right.
-	--collide with flag 0, 1
-	a.collide_floor=function(self)
-	
-		if self.dy<0 then
-			return false
-		end
-		
-		local landed=false
-
-		for i=-(self.w/3),(self.w/3),2 do
-			local tile=mget((self.x+i)/8,(self.y+(self.h/2))/8)
-			if fget(tile,0) or (fget(tile,1) and self.dy>=0) then
-				self.dy=0
-				self.y=(flr((self.y+(self.h/2))/8)*8)-(self.h/2)
-				self.grounded=true
-				self.airtime=0
-				landed=true
-			end
-		end
-		
-		return landed
-	end
-	
-	
-	--check for collision 
-	--at multiple points 
-	--along the side
-	--of the sprite: 
-	--bottom, center, and top.
-	--collide with flag 0
-	a.collide_side=function(self)
-		local offset=self.w/3
-		for i=-(self.w/3),(self.w/3),2 do
-			if fget(mget((self.x+(offset))/8,(self.y+i)/8),0) then
-				self.dx=0
-				self.x=(flr(((self.x+(offset))/8))*8)-(offset)
-				return true
-			end
-			if fget(mget((self.x-(offset))/8,(self.y+i)/8),0) then
-				self.dx=0
-				self.x=(flr((self.x-(offset))/8)*8)+8+(offset)
-				return true
-			end
-		end
-		return false
-	end
-	
-	return a
+	return e
 end
 -->8
 --animation_player
@@ -486,23 +501,6 @@ function make_hitbox(f,t,w,h)
 	end
 	
 	return hb
-end
--->8
---enemy
-
---create a player
---px -- x position
---py -- y position
---l	 -- lifes
---@return e new enemy
-function make_enemy(px,py)
-	local e=make_actor({8,8,px,py})
-	
-	//state
-	e.alive=true
-	e.dx=1
-	
-	return e
 end
 __gfx__
 00000000070000000700000007000000007000000007000000700000070000000700000000070000000070000000000000000000000000000000000000000000
