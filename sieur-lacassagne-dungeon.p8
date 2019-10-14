@@ -1,31 +1,61 @@
 pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
+
 --main
+player={}
+enemies={}
+kills={}
 function _init()	
-	player=make_player(78,80,5)
-	bat=make_bat(92,80)
-	ghost=make_ghost(84,80)
-	spider=make_spider(100,84)
-	skeleton=make_skeleton(108,84)
+	player=make_player(68,80,5)
+
+	--bat
+	add(enemies,make_bat(80,80))
+	add(enemies,make_bat(32,92))
+
+	--ghost
+	add(enemies,make_ghost(90,80))
+	add(enemies,make_ghost(40,92))
+
+	--spider
+	add(enemies,make_spider(100,84))
+	add(enemies,make_spider(48,92))
+
+	--skeleton
+	add(enemies,make_skeleton(110,84))
+	add(enemies,make_skeleton(56,92))
 end
 
 function _update60()
 	player:update()
-	bat:update()
-	ghost:update()
-	spider:update()
-	skeleton:update()
+
+	--kills for previous frames
+	for kill in all(kills) do
+		del(enemies,kill)
+	end
+	kill={}
+
+	--update remaining enemies
+	for enemy in all(enemies) do
+		enemy:update()
+	end
 end
 
 function _draw()
 	cls()
 	map(0,0,0,0,128,128)
+
+	--player update
 	player:draw()
-	bat:draw()
-	ghost:draw()
-	spider:draw()
-	skeleton:draw()
+
+	--update enemies sprites
+	for enemy in all(enemies) do
+		enemy:draw()
+	end
+
+	if not player.is_alive then
+		print("death")
+	end
 end
 -->8
 --actor
@@ -59,6 +89,7 @@ function make_actor(w,h,x,y)
 
 	--actor state
 	a.is_attacking=false
+	a.is_alive=true
 	
 	
 	--set motion props
@@ -121,6 +152,13 @@ function make_actor(w,h,x,y)
 		end
 		return false
 	end
+
+
+	--get collision rect
+	--@return object
+	a.rect=function(self)
+		return get_rect(self.x,self.y,self.w,self.h)
+	end
 	
 	return a
 end
@@ -174,7 +212,8 @@ function make_player(px,py,l)
 			loop=false
 		}
 	},"slash")
-	local hitbox=make_hitbox(0,2,16,16)
+	local hitbox=make_hitbox(16,16,enemies)
+	local hurtbox=make_hitbox(8,8,enemies)
 
 	--player properties
 	p.score=0
@@ -182,7 +221,6 @@ function make_player(px,py,l)
 	
 	
 	--player states
-	p.is_alive=true
 	p.is_blocking=false
 	p.is_jumping=false
 	p.slash_active=false
@@ -360,8 +398,11 @@ function make_player(px,py,l)
 
 		--update animation player
 		ap:play()
+
+		hurtbox:update(self.x,self.y)
 		if self.slash_active then
 			slash_ap:play()
+			hitbox:update(self.x,self.y)
 			if slash_ap.finished then
 				self.slash_active=false
 			end
@@ -377,9 +418,11 @@ function make_player(px,py,l)
 
 		--player
 		ap:draw(x,y,self.w,self.h,fx)
+		hurtbox:draw(x,y)
 
 		--slash
 		if self.slash_active then
+			hitbox:draw(self.x,self.y)
 			slash_ap:draw(x,y,16,16,fx)
 		end
 	end
@@ -399,13 +442,12 @@ end
 --l	 -- lifes
 --anims --anims object {lists, current}
 --@return e new enemy
-function make_enemy(w,h,px,py,hu,anims)
+function make_enemy(name,w,h,px,py,hu,anims)
 	local e=make_actor(w,h,px,py)
 	
 	--state
-	local hurtbox=make_hurtbox(3,hu.w,hu.h)
 	local ap=make_animation_player(anims.a,anims.c)
-	e.alive=true
+	e.name=name
 
 	e.update=function(self)
 		ap:play()
@@ -413,13 +455,22 @@ function make_enemy(w,h,px,py,hu,anims)
 
 	e.draw=function(self)
 		ap:draw(self.x,self.y,self.w,self.h,self.flipx)
+
+		local r=get_rect(self.x,self.y,self.w,self.h)
+		rect(r.x0,r.y0,r.x1,r.y1)
 	end
 	
 	return e
 end
 
+--Should fly from let to right
+--with a specific distance
+--px -- x position
+--py -- y position
+--@return b
 function make_bat(px,py)
 	local b=make_enemy(
+		"bat",
 		8,
 		8,
 		px,
@@ -440,8 +491,15 @@ function make_bat(px,py)
 	return b
 end
 
+
+--Stay at the same positoin
+--but fade away to hide in the dark
+--px -- x position
+--py -- y position
+--@return g
 function make_ghost(px,py)
 	local g=make_enemy(
+		"ghost",
 		8,
 		8,
 		px,
@@ -462,8 +520,15 @@ function make_ghost(px,py)
 	return g
 end
 
+--Move from left to right
+--and change direction only
+--when colliding a corner
+--px -- x position
+--py -- y position
+--@return s
 function make_spider(px,py)
 	local s=make_enemy(
+		"spider",
 		8,
 		8,
 		px,
@@ -484,8 +549,14 @@ function make_spider(px,py)
 	return s
 end
 
+--Doesn't nothing beside
+--beign spooky
+--px -- x position
+--py -- y position
+--@return s
 function make_skeleton(px,py)
 	local s=make_enemy(
+		"skeleton",
 		8,
 		8,
 		px,
@@ -605,15 +676,41 @@ end
 --@param t ticks
 --@param w width
 --@param h height
-function make_hitbox(f,t,w,h)
+--@param t target
+function make_hitbox(w,h,t)
 	local hb={}
 	hb.flag=f
 	hb.ticks=t
 	hb.w=w
 	hb.h=h
 
-	hb.draw=function(self,active,x,y)
-		if(not active) return
+
+	--get collision rect
+	--@return object
+	hb.update=function(self,x,y)
+		local box=get_rect(x,y,self.w,self.h)
+		for target in all(t) do
+			local ebox=target:rect()
+			local x0=ebox.x0
+			local y0=ebox.y0
+			local x1=ebox.x1
+			local y1=ebox.y1
+
+			--enemy is top left corner is in the hitbox (x0,y0)
+			--enemy is lower left corner is in the hitbox (x0,y1)
+			--enemy is top right corner is in the hitbox (x1,y0)
+			--enemy is lower right corner is in the hitbox (x1.y1)
+			if collide_rect(box,x0,y0) or collide_rect(box,x0,y1) or collide_rect(box,x1,y0) or collide_rect(box,x1,y1) then
+				printh("player has kill a " ..target.name)
+				player.lives-=1
+				player.is_alive=false
+			end
+		end
+	end
+
+	hb.draw=function(self,x,y)
+		local r=get_rect(x,y,self.w,self.h)
+		rect(r.x0,r.y0,r.x1,r.y1)
 	end
 	
 	return hb
@@ -626,18 +723,56 @@ end
 --@param f flag
 --@param w width
 --@param h height
-function make_hurtbox(f,w,h)
-	local hb={}
-	hb.flag=f
-	hb.ticks=t
-	hb.w=w
-	hb.h=h
+function make_hurtbox(w,h)
+	local hub={}
+	hub.flag=f
+	hub.w=w
+	hub.h=h
 
-	hb.draw=function(self,active,x,y)
-		if(not active) return
+	hub.update=function(self,x,y)
+		local box=get_rect(x,y,self.w,self.h)
+		local x0=box.x0
+		local y0=box.y0
+		local x1=box.x1
+		local y1=box.y1
+		for enemy in all(enemies) do
+			local ebox=enemy:rect()
+
+			if collide_rect(ebox,x0,y0) or collide_rect(ebox,x0,y1) or collide_rect(ebox,x1,y0) or collide_rect(ebox,x1,y1) then
+				printh("player is death")
+			end
+		end
+	end
+
+	hub.draw=function(self,x,y)
+		local r=get_rect(x,y,self.w,self.h)
+		rect(r.x0,r.y0,r.x1,r.y1)
 	end
 	
-	return hb
+	return hub
+end
+-->8
+--utils
+
+-- @return {
+-- x0 The x coordinate of the upper left corner.
+-- y0 The y coordinate of the upper left corner.
+-- x1 The x coordinate of the lower right corner.
+-- y1 The y coordinate of the lower right corner.
+-- }
+function get_rect(x,y,w,h)
+	w=w/2
+	h=h/2
+	return {
+		x0=x-w,
+		y0=y+h,
+		x1=x+w,
+		y1=y-h
+	}
+end
+
+function collide_rect(box,x,y)
+	return box.x0<=x and box.y0>=y and box.x1>=x and box.y1<=y
 end
 __gfx__
 00000000070000000700000007000000007000000007000000700000070000000700000000070000000070000000000000000000000000000000000000000000
