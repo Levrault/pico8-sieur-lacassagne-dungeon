@@ -199,10 +199,7 @@ function make_actor(w,h,x,y)
 	--left, center, and right.
 	--collide with flag 0, 1
 	a.collide_floor=function(self)
-	
-		if self.dy<0 then
-			return false
-		end
+		if (self.dy<0) return false
 		
 		local landed=false
 
@@ -468,9 +465,18 @@ function make_player(px,py)
 		self.y+=self.dy
 	end	
 	
+
+	--encounter a deadly traps
+	--@return bool
+	p.collide_traps=function(self)
+		return fget(mget((self.x/8),(self.y/8)),2)
+	end
 	
 	--update game loop
 	p.update=function(self)
+		if self:collide_traps() then
+			printh("player has been kill by a traps")
+		end
 		self:compute_gravity()
 		self.jump_button:update()
 		self:jump()
@@ -915,7 +921,7 @@ function make_hurtbox(w,h)
 			local ebox=enemy:rect()
 
 			if collide_rect(ebox,x0,y0) or collide_rect(ebox,x0,y1) or collide_rect(ebox,x1,y0) or collide_rect(ebox,x1,y1) then
-				printh("player is death")
+				printh("player was killed by " ..enemy.name)
 			end
 		end
 	end
