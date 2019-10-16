@@ -61,7 +61,8 @@ function make_game_manager()
 			self.cam_y=0
 
 			--bat
-			add(enemies,make_bat(80,80))
+			add(enemies,make_bat(68,80,20))
+			add(enemies,make_bat(68,20,0))
 
 			--skeleton
 			add(enemies,make_skeleton(60,116))
@@ -70,14 +71,14 @@ function make_game_manager()
 			self.coin=make_coin(116,28)
 
 			--player must created last
-			self.player=make_player(64,70)
+			self.player=make_player(12,120)
 
 		elseif level==1 then
 			self.d_cam_x=128
 			self.d_cam_y=0
 
 			--bat
-			add(enemies,make_bat(228,80))
+			add(enemies,make_bat(228,80,10))
 
 			--skeleton
 			add(enemies,make_skeleton(158,116))
@@ -138,8 +139,6 @@ function make_game_manager()
 		for enemy in all(enemies) do
 			enemy:draw()
 		end
-
-		print(self.player.dy)
 
 		if not self.player.is_alive then
 			print("death")
@@ -503,11 +502,11 @@ function make_player(px,py)
 
 		--player
 		ap:draw(x,y,self.w,self.h,fx)
-		hurtbox:draw(x,y)
+		-- hurtbox:draw(x,y)
 
 		--slash
 		if self.slash_active then
-			hitbox:draw(self.x,self.y)
+			-- hitbox:draw(self.x,self.y)
 			slash_ap:draw(x,y,16,16,fx)
 		end
 	end
@@ -529,15 +528,15 @@ function make_enemy(name,w,h,px,py,hu,anims)
 	local e=make_actor(w,h,px,py)
 	
 	--state
-	local ap=make_animation_player(anims.a,anims.c)
+	e.ap=make_animation_player(anims.a,anims.c)
 	e.name=name
 
 	e.update=function(self)
-		ap:play()
+		self.ap:play()
 	end
 
 	e.draw=function(self)
-		ap:draw(self.x,self.y,self.w,self.h,self.flipx)
+		self.ap:draw(self.x,self.y,self.w,self.h,self.flipx)
 
 		-- local r=get_rect(self.x,self.y,self.w,self.h)
 		-- rect(r.x0,r.y0,r.x1,r.y1)
@@ -551,7 +550,7 @@ end
 --px -- x position
 --py -- y position
 --@return b
-function make_bat(px,py)
+function make_bat(px,py,dist)
 	local b=make_enemy(
 		"bat",
 		8,
@@ -570,7 +569,36 @@ function make_bat(px,py)
 			c="fly"
 		}
 	)
-	
+
+	b.dmin=px-dist
+	b.dmax=px+dist
+	b.speed=60
+	b.max_dx=0.45
+	b.dist=dist
+
+	b.update=function(self)
+		self:patrol()
+		self.ap:play()
+	end
+
+	b.patrol=function(self)
+		if (self.dist==0) return
+
+		if self.dmax<=self.x and self.lx==1 then
+			self.lx=-1
+		elseif self.dmin>=self.x and self.lx==-1 then
+			self.lx=1
+		end
+		printh(self.lx)
+		
+		self:motion(self.lx)
+		self.dx=self.speed*self.lx
+		--limit move speed
+		self.dx=mid(-self.max_dx,self.dx,self.max_dx)
+		self.x+=self.dx
+		self:collide_side()
+	end
+
 	return b
 end
 
