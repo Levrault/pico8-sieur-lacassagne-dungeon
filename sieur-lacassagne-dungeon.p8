@@ -391,8 +391,8 @@ function make_player(px,py)
 			loop=true
 		}
 	},"idle")
-	local hitbox=make_hitbox(16,16,enemies)
-	local hurtbox=make_hurtbox(8,8,enemies)
+	local hitbox=make_hitbox(10,10,enemies)
+	local hurtbox=make_hurtbox(4,4,enemies)
 	
 	--player states
 	p.is_blocking=false
