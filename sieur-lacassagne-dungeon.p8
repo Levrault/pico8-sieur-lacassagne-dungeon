@@ -33,6 +33,7 @@ end
 --Manage level
 function make_game_manager()
 	local gm={}
+	local timer=make_timer(60)
 	gm.player={}
 	gm.coin={}
 	gm.kills={}
@@ -43,11 +44,21 @@ function make_game_manager()
 	gm.cam_y=0
 	gm.d_cam_x=0
 	gm.d_cam_y=0
-	gm.flashed=false
+
+	--0	playing
+	--1 player death
+	--2	transition_death
+	--3	death_screen
+	--4	game_over
+	--5	restart
+	--6	finished
+	gm.state=0
 
 	--change level
 	--@param level level number
 	gm.set_level=function(self,level)
+		self.state=0
+		self.c_level=level
 		enemies={}
 		self.kills={}
 		del(self,self.player)
@@ -94,9 +105,50 @@ function make_game_manager()
 
 	--flash all screen for one frame
 	gm.flash_screen=function(self)
-		if (self.flashed) return
 		rectfill(0,0,128,128,7)
-		self.flashed=true
+	end
+
+
+	--show death screen
+	gm.death_screen=function(self)
+		print('sacre bleu! you are death', (self.cam_x+16), (self.cam_y+58))
+		print('press btn 5 to restart', (self.cam_x+24), (self.cam_y+68))
+
+		if btn(5) then
+			self.state=5
+		end
+	end
+
+
+	--update game state machine
+	gm.state_update=function(self)
+		if self.state==0 then
+			if not self.player.is_alive then
+				self.state=1
+			end
+		elseif self.state==1 then
+			self.state=2
+			timer:reset()
+			timer:start()
+		elseif self.state==2 and timer.finished then
+			self.state=3
+		elseif self.state==5 then
+			self:set_level(self.c_level)
+		end
+	end
+
+
+	--update game draw state machine
+	gm.state_draw=function(self)
+		if self.state==0 then
+			return
+		elseif self.state==1 then
+			self:flash_screen()
+		elseif self.state==2 then
+			return
+		elseif self.state==3 then
+			self:death_screen()
+		end
 	end
 
 
@@ -105,6 +157,13 @@ function make_game_manager()
 		if self.cam_x!=self.d_cam_x or self.cam_y!=self.d_cam_y then
 			return
 		end
+
+		--update game state
+		self:state_update()
+
+		--timer
+		timer:update()
+
 		--player
 		self.player:update()
 
@@ -118,7 +177,6 @@ function make_game_manager()
 			end
 			self.kill={}
 		end
-
 		--update remaining enemies
 		for enemy in all(enemies) do
 			enemy:update()
@@ -138,10 +196,11 @@ function make_game_manager()
 			return
 		end
 
-		if not self.player.is_alive then
-			print("death")
-			self:flash_screen()
-		end
+
+		--gm state management
+		self:state_draw()
+
+		if (self.state==3) return
 
 		--player update
 		self.player:draw()
@@ -959,15 +1018,54 @@ function make_hurtbox(w,h)
 	
 	return hub
 end
+
+
+--timer
+--@param t nb of frame the timer should wait
+function make_timer(wt,callback)
+	local t={}
+	t.wait_time=wt
+	t.c_time=wt
+	t.started=false
+	t.finished=false
+
+
+	--reset timer
+	t.reset=function(self)
+		self.c_time=self.wait_time
+		self.finished=false
+		self.started=false
+	end
+
+	
+	--decrease timer
+	t.start=function(self)
+		if not self.started then
+			self.started=true
+		end
+	end
+
+
+	--decrease timer
+	t.update=function(self)
+		if (not self.started) return
+		self.c_time-=1
+		if self.c_time<=0 then
+			self.finished=true
+			self.started=false
+		end
+	end
+
+	return t
+end
 -->8
 --utils
 
---@return {
+--@return 
 --	x0 The x coordinate of the upper left corner.
 --	y0 The y coordinate of the upper left corner.
 --	x1 The x coordinate of the lower right corner.
 --	y1 The y coordinate of the lower right corner.
---}
 function get_rect(x,y,w,h)
 	w=w/2
 	h=h/2
@@ -1077,3 +1175,4 @@ __map__
 1000000000000000000000000000001010000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 1000000000000000000000001112131010000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 1010101010101010101010101010101010101010101010101616161010121410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000001010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
