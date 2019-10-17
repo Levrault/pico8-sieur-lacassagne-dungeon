@@ -10,14 +10,12 @@ __lua__
 --	3 player
 --	4 enemies
 --	5 coins
---@TODO: fix one way platform the push to player in
---@TODO: let the player attack in air
 gm={}
 enemies={}
 
 function _init()
 	gm=make_game_manager()
-	gm:set_level(1)
+	gm:set_level(0)
 
 end
 
@@ -30,6 +28,7 @@ function _draw()
 	map(0,0,0,0,128,128)
 	gm:draw()
 end
+
 
 --Manage level
 function make_game_manager()
@@ -44,6 +43,7 @@ function make_game_manager()
 	gm.cam_y=0
 	gm.d_cam_x=0
 	gm.d_cam_y=0
+	gm.flashed=false
 
 	--change level
 	--@param level level number
@@ -91,6 +91,15 @@ function make_game_manager()
 		end
 	end
 
+
+	--flash all screen for one frame
+	gm.flash_screen=function(self)
+		if (self.flashed) return
+		rectfill(0,0,128,128,7)
+		self.flashed=true
+	end
+
+
 	--update game loop
 	gm.update=function(self)
 		if self.cam_x!=self.d_cam_x or self.cam_y!=self.d_cam_y then
@@ -129,6 +138,11 @@ function make_game_manager()
 			return
 		end
 
+		if not self.player.is_alive then
+			print("death")
+			self:flash_screen()
+		end
+
 		--player update
 		self.player:draw()
 
@@ -138,10 +152,6 @@ function make_game_manager()
 		--update enemies sprites
 		for enemy in all(enemies) do
 			enemy:draw()
-		end
-
-		if not self.player.is_alive then
-			print("death")
 		end
 	end
 
@@ -270,6 +280,7 @@ function make_actor(w,h,x,y)
 	return a
 end
 
+
 --create a player
 --FLAG=3
 --px -- x position
@@ -277,6 +288,13 @@ end
 --@return p new player
 function make_player(px,py)
 	local p=make_actor(8,8,px,py)
+	local slash_ap=make_animation_player({
+		["slash"]={
+			ticks=4,
+			frames={32,32,34},
+			loop=false
+		}
+	},"slash")
 	local ap=make_animation_player({
 		["idle"]={
 			ticks=1,
@@ -307,18 +325,16 @@ function make_player(px,py)
 			ticks=1,
 			frames={8},
 			loop=true
+		},
+		["death"]={
+			ticks=1,
+			frames={13},
+			loop=true
 		}
 	},"idle")
-	local slash_ap=make_animation_player({
-		["slash"]={
-			ticks=4,
-			frames={32,32,34},
-			loop=false
-		}
-	},"slash")
 	local hitbox=make_hitbox(16,16,enemies)
 	local hurtbox=make_hurtbox(8,8,enemies)
-
+	
 	--player states
 	p.is_blocking=false
 	p.is_jumping=false
@@ -467,16 +483,19 @@ function make_player(px,py)
 	
 
 	--encounter a deadly traps
-	--@return bool
 	p.collide_traps=function(self)
-		return fget(mget((self.x/8),(self.y/8)),2)
+		self.is_alive=not fget(mget((self.x/8),(self.y/8)),2)
 	end
 	
 	--update game loop
 	p.update=function(self)
-		if self:collide_traps() then
-			printh("player has been kill by a traps")
+		if not self.is_alive then
+			ap:set_anim("death")
+			self:compute_gravity()
+			return
 		end
+
+		self:collide_traps()
 		self:compute_gravity()
 		self.jump_button:update()
 		self:jump()
@@ -489,7 +508,7 @@ function make_player(px,py)
 		ap:play()
 
 		hurtbox:update(self.x,self.y)
-		if self.slash_active then
+		if self.slash_active and self.is_alive then
 			slash_ap:play()
 			hitbox:update(self.x,self.y)
 			if slash_ap.finished then
@@ -510,7 +529,7 @@ function make_player(px,py)
 		-- hurtbox:draw(x,y)
 
 		--slash
-		if self.slash_active then
+		if self.slash_active and self.is_alive then
 			-- hitbox:draw(self.x,self.y)
 			slash_ap:draw(x,y,16,16,fx)
 		end
@@ -518,6 +537,7 @@ function make_player(px,py)
 	
 	return p
 end
+
 
 --enemy
 --create an enemy
@@ -588,6 +608,7 @@ function make_enemy(name,w,h,px,py,hu,anims)
 	return e
 end
 
+
 --Should fly from let to right
 --with a specific distance
 --px -- x position
@@ -656,6 +677,7 @@ function make_ghost(px,py)
 	return g
 end
 
+
 --Move from left to right
 --and change direction only
 --when colliding a corner
@@ -691,6 +713,7 @@ function make_spider(px,py)
 
 	return s
 end
+
 
 --Doesn't nothing beside
 --beign spooky
@@ -861,6 +884,7 @@ function make_animation_player(a,c)
 	return ap
 end
 
+
 --should damage an actor when colliding with a hurtbox
 --@param w width
 --@param h height
@@ -901,6 +925,7 @@ function make_hitbox(w,h,t)
 	return hb
 end
 
+
 --represente the zone where an actor can 
 --receive damage
 --@param w width
@@ -922,6 +947,7 @@ function make_hurtbox(w,h)
 
 			if collide_rect(ebox,x0,y0) or collide_rect(ebox,x0,y1) or collide_rect(ebox,x1,y0) or collide_rect(ebox,x1,y1) then
 				printh("player was killed by " ..enemy.name)
+				gm.player.is_alive=false
 			end
 		end
 	end
@@ -952,6 +978,7 @@ function get_rect(x,y,w,h)
 		y1=y-h
 	}
 end
+
 
 -- Does the point is in the rect ?
 -- @return bool
