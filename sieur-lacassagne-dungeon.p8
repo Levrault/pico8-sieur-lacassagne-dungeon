@@ -15,7 +15,7 @@ enemies={}
 
 function _init()
 	gm=make_game_manager()
-	gm:set_level(1)
+	gm:set_level(0)
 
 end
 
@@ -99,7 +99,7 @@ function make_game_manager()
 			add(enemies,make_spider(238,116))
 
 			--ghost
-			add(enemies,make_ghost(213,20,0))
+			add(enemies,make_ghost(213,20))
 
 			--coin
 			self.coin=make_coin(244,28)
@@ -112,6 +112,13 @@ function make_game_manager()
 
 			--coin
 			self.coin=make_coin(372,116)
+
+			--ghost
+			add(enemies,make_ghost(273,92))
+			add(enemies,make_ghost(273,44))
+
+			add(enemies,make_ghost(337,92))
+			add(enemies,make_ghost(337,44))
 
 			--player must created last
 			self.player=make_player(268,120)
@@ -410,8 +417,8 @@ function make_player(px,py)
 			loop=true
 		}
 	},"idle")
-	local hitbox=make_hitbox(10,10,enemies)
-	local hurtbox=make_hurtbox(4,4,enemies)
+	local hitbox=make_hitbox(10,10)
+	local hurtbox=make_hurtbox(4,4)
 	
 	--player states
 	p.is_blocking=false
@@ -743,15 +750,15 @@ function make_ghost(px,py)
 		{
 			a={
 				["idle"]={
-					ticks=10,
-					frames={80,80,81,81,82,82,83,83,84,84},
+					ticks=16,
+					frames={80,80,81,82,83,84,84,84,84,84,84,83,82,81,80,80},
 					loop=true
 				}
 			},
 			c="idle"
 		}
 	)
-	
+
 	return g
 end
 
@@ -902,6 +909,12 @@ function make_animation_player(a,c)
 			false
 		)
 	end
+
+	
+	--return current frames from anims array
+	ap.get_current_frame=function(self)
+		return self.anims[self.current_anim].frames[self.current_frame]
+	end
 	
 
 	--select new animation
@@ -966,19 +979,19 @@ end
 --should damage an actor when colliding with a hurtbox
 --@param w width
 --@param h height
---@param t target
-function make_hitbox(w,h,t)
+function make_hitbox(w,h)
 	local hb={}
 	hb.w=w
 	hb.h=h
 
 
-	--get collision rect
+	--get collision recenemyt
 	--@return object
 	hb.update=function(self,x,y)
 		local box=get_rect(x,y,self.w,self.h)
-		for target in all(t) do
-			local ebox=target:rect()
+		for enemy in all(enemies) do
+			if (enemy.name=="ghost") return
+			local ebox=enemy:rect()
 			local x0=ebox.x0
 			local y0=ebox.y0
 			local x1=ebox.x1
@@ -989,8 +1002,8 @@ function make_hitbox(w,h,t)
 			--enemy is top right corner is in the hitbox (x1,y0)
 			--enemy is lower right corner is in the hitbox (x1.y1)
 			if collide_rect(box,x0,y0) or collide_rect(box,x0,y1) or collide_rect(box,x1,y0) or collide_rect(box,x1,y1) then
-				add(gm.kills,target)
-				printh("player kill a " ..target.name)
+				add(gm.kills,enemy)
+				printh("player kill a " ..enemy.name)
 			end
 		end
 	end
@@ -1015,6 +1028,7 @@ function make_hurtbox(w,h)
 	hub.h=h
 
 	hub.update=function(self,x,y)
+
 		local box=get_rect(x,y,self.w,self.h)
 		local x0=box.x0
 		local y0=box.y0
@@ -1024,8 +1038,12 @@ function make_hurtbox(w,h)
 			local ebox=enemy:rect()
 
 			if collide_rect(ebox,x0,y0) or collide_rect(ebox,x0,y1) or collide_rect(ebox,x1,y0) or collide_rect(ebox,x1,y1) then
-				printh("player was killed by " ..enemy.name)
-				gm.player.is_alive=false
+				--only ghost has frame that can't hurt the player
+				if enemy.name!="ghost" or enemy.ap:get_current_frame()!=84 then
+					printh("player was killed by " ..enemy.name)
+					gm.player.is_alive=false
+				end
+
 			end
 		end
 	end
