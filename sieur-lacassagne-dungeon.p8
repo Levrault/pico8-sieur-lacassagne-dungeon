@@ -40,7 +40,8 @@ end
 --Manage level
 function make_game_manager()
 	local gm={}
-	local timer=make_timer(60)
+	local death_screen_timer=make_timer(60)
+	local spawn_timer=make_timer(20)
 	gm.txt_blink_i=0
 	gm.txt_blink=false
 	gm.player={}
@@ -69,6 +70,8 @@ function make_game_manager()
 	gm.set_level=function(self,level)
 		self.state=0
 		self.c_level=level
+		spawn_timer:reset()
+		spawn_timer:start()
 		enemies={}
 		self.kills={}
 		del(self,self.player)
@@ -223,11 +226,15 @@ function make_game_manager()
 				sfx(snd.death)
 				self.state=1
 			end
+
+			if self.player.is_spawning and spawn_timer.finished then
+				self.player.is_spawning=false
+			end
 		elseif self.state==1 then
 			self.state=2
-			timer:reset()
-			timer:start()
-		elseif self.state==2 and timer.finished then
+			death_screen_timer:reset()
+			death_screen_timer:start()
+		elseif self.state==2 and death_screen_timer.finished then
 			self.state=3
 		elseif self.state==5 then
 			self:set_level(self.c_level)
@@ -261,7 +268,8 @@ function make_game_manager()
 		self:state_update()
 
 		--timer
-		timer:update()
+		death_screen_timer:update()
+		spawn_timer:update()
 
 		if (self.state==6) then 
 			return
@@ -516,6 +524,7 @@ function make_player(px,py)
 	p.is_blocking=false
 	p.is_jumping=false
 	p.slash_active=false
+	p.is_spawning=true
 	p.max_dx=0.85 --x direction speed
 	
 	
@@ -533,6 +542,9 @@ function make_player(px,py)
 	--btn(5), should manage jump input
 	p.jump_button={
 		update=function(self)
+			if (self.is_spawning) return
+			printh("jump")
+
 			self.is_pressed=false
 			
 			if btn(5) then
@@ -567,6 +579,8 @@ function make_player(px,py)
 			self.grounded=false
 			self.airtime+=1
 		end
+
+		if (self.is_spawning) return
 		
 		if self.jump_button.is_down then
 			
