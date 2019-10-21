@@ -517,7 +517,7 @@ function make_player(px,py)
 			loop=true
 		}
 	},"idle")
-	local hitbox=make_hitbox(10,10)
+	local hitbox=make_hitbox(11,11)
 	local hurtbox=make_hurtbox(4,4)
 	
 	--player states
