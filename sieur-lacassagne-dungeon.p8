@@ -566,7 +566,6 @@ function make_player(px,py)
 	p.jump_button={
 		update=function(self)
 			if (self.is_spawning) return
-			printh("jump")
 
 			self.is_pressed=false
 			
