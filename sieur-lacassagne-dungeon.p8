@@ -519,8 +519,10 @@ function make_player(px,py)
 	},"idle")
 	local hitbox=make_hitbox(11,11)
 	local hurtbox=make_hurtbox(4,4)
+	local cooldown=make_timer(30)
 	
 	--player states
+	p.can_attack=true
 	p.is_blocking=false
 	p.is_jumping=false
 	p.slash_active=false
@@ -627,10 +629,13 @@ function make_player(px,py)
 
 	--play the player attack animation
 	p.attack=function(self)
-		if self.attack_button.is_pressed then
+		if self.attack_button.is_pressed and self.can_attack then
 			sfx(snd.slash)
 			ap:set_anim("attack")
 			slash_ap:set_anim("slash")
+			cooldown:reset()
+			cooldown:start()
+			self.can_attack=false
 			self.is_attacking=true
 			self.slash_active=true
 		elseif self.is_attacking and ap.finished then
@@ -697,6 +702,13 @@ function make_player(px,py)
 		self:move()
 		self.attack_button:update()
 		self:attack()
+
+		if not self.can_attack then
+			printh(cooldown.finished)
+			printh(cooldown.started)
+			cooldown:update()
+			self.can_attack=cooldown.finished
+		end
 
 		--update animation player
 		ap:play()
