@@ -24,8 +24,8 @@ snd={
 
 function _init()
 	gm=make_game_manager()
-	-- gm:main_menu()
-	gm:set_level(10)
+	gm:main_menu()
+	-- gm:set_level(11)
 end
 
 function _update60()
@@ -43,6 +43,7 @@ end
 function make_game_manager()
 	local gm={}
 	local death_screen_timer=make_timer(60)
+	local win_timer=make_timer(60)
 	local spawn_timer=make_timer(20)
 	gm.txt_blink_i=0
 	gm.txt_blink=false
@@ -56,7 +57,7 @@ function make_game_manager()
 	gm.cam_y=0
 	gm.d_cam_x=0
 	gm.d_cam_y=0
-	gm.cam_speed=32
+	gm.cam_speed=2
 
 	--0	playing
 	--1 player death
@@ -66,6 +67,7 @@ function make_game_manager()
 	--5	restart
 	--6	main menu
 	--7	end screen
+	--8	transition to main menu
 	gm.state=6
 
 	--change level
@@ -204,6 +206,13 @@ function make_game_manager()
 
 			self.coin=make_coin(705,147)
 			self.player=make_player(705,197)
+		elseif level==11 then--x[640,768] y[128,256]
+			self.cam_x=0
+			self.cam_y=0
+
+			self.state=7
+			gm:ending()
+
 		end
 	end
 
@@ -228,8 +237,39 @@ function make_game_manager()
 		print(author,hcenter(author),112,9)
 
 		if btn(5) then
-			gm:set_level(0)
-			self.state=0
+			if not win_timer.started or win_timer.finished then
+				gm:set_level(0)
+				self.state=0
+			end
+		end
+	end
+
+
+	--ending screen
+	gm.ending=function(self)
+		if self.txt_blink_i>30 then
+			self.txt_blink=not self.txt_blink
+			self.txt_blink_i=0
+		end
+		self.txt_blink_i+=1
+		local title="you win!"
+		local screen="press \x97 to go to main menu"
+		local thanks="thanks for playing!"
+		local devtober="a devtober game"
+		local author="by levrault"
+
+		print(title,hcenter(title),12,9)
+		print(thanks,hcenter(thanks),18,9)
+		if self.txt_blink then
+			print(screen,hcenter(screen),68,7)
+		end
+		print(devtober,12,104,9)
+		print(author,52,112,9)
+
+		if btn(5) then
+			win_timer:reset()
+			win_timer:start()
+			self.state=6
 		end
 	end
 
@@ -286,6 +326,8 @@ function make_game_manager()
 			self:death_screen()
 		elseif self.state==6 then
 			self:main_menu()
+		elseif self.state==7 then
+			self:ending()
 		end
 	end
 
@@ -301,9 +343,10 @@ function make_game_manager()
 
 		--timer
 		death_screen_timer:update()
+		win_timer:update()
 		spawn_timer:update()
 
-		if (self.state==6) then 
+		if self.state==6 or self.state==7 then 
 			return
 		end
 
@@ -359,7 +402,7 @@ function make_game_manager()
 		--gm state management
 		self:state_draw()
 
-		if (self.state==3 or self.state==6) return
+		if (self.state==3 or self.state==6 or self.state==7) return
 
 		print(stat(0),self.cam_x+10,self.cam_y+8)
 		print(stat(1),self.cam_x+10,self.cam_y+16)
