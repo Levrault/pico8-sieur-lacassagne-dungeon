@@ -26,7 +26,7 @@ function _init()
 	music(0)
 	gm=make_game_manager()
 	gm:main_menu()
-	-- gm:set_level(10)
+	-- gm:set_level(2)
 end
 
 function _update60()
@@ -316,7 +316,7 @@ function make_game_manager()
 
 	--flash all screen for one frame
 	gm.flash_screen=function(self)
-		rectfill(0,0,128,128,7)
+		rectfill(self.cam_x,self.cam_y,(self.cam_x+128),(self.cam_y+128),7)
 	end
 
 
