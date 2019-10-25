@@ -259,19 +259,19 @@ function make_game_manager()
 		print(title,hcenter(title),264,9)
 		local continue="press \x97 to continue"
 		print("slashable",0,288,3)
-		spr(13,12,304,1,1)--skeleton
-		spr(48,12,320,1,1)--spider
-		spr(52,12,336,1,1)--bat
+		spr(13,14,304,1,1)--skeleton
+		spr(48,14,320,1,1)--spider
+		spr(52,14,336,1,1)--bat
 
 		local danger="danger"
-		print(danger,hcenter(danger),288,4)
+		print(danger,hcenter(danger),288,8)
 		spr(57,60,304,1,1)--ghost danger
 		spr(58,60,320,1,1)--ghost danger
 		spr(59,60,336,1,1)--ghost danger
 		spr(60,60,350,1,1)--ghost danger
 
-		print("safe",94,288,5)
-		spr(61,98,304,1,1)--ghost safe
+		print("no danger",92,288,3)
+		spr(61,104,304,1,1)--ghost safe
 		if self.txt_blink then
 			print(continue,hcenter(continue),376,7)
 		end
