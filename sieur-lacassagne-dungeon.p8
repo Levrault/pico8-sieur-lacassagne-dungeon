@@ -26,7 +26,7 @@ function _init()
 	music(0)
 	gm=make_game_manager()
 	gm:main_menu()
-	-- gm:set_level(11)
+	-- gm:set_level(10)
 end
 
 function _update60()
@@ -209,6 +209,8 @@ function make_game_manager()
 		elseif level==11 then--x[640,768] y[128,256]
 			self.cam_x=0
 			self.cam_y=0
+			self.d_cam_x=0
+			self.d_cam_y=0
 
 			self.state=7
 			gm:ending()
@@ -442,9 +444,9 @@ function make_game_manager()
 
 		if (self.state==3 or self.state==6 or self.state==7 or self.state==8) return
 
-		print(stat(0),self.cam_x+10,self.cam_y+8)
-		print(stat(1),self.cam_x+10,self.cam_y+16)
-		print(stat(7),self.cam_x+10,self.cam_y+24)
+		-- print(stat(0),self.cam_x+10,self.cam_y+8)
+		-- print(stat(1),self.cam_x+10,self.cam_y+16)
+		-- print(stat(7),self.cam_x+10,self.cam_y+24)
 		--player update
 		self.player:draw()
 
