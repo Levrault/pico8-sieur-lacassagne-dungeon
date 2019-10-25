@@ -43,8 +43,7 @@ end
 --Manage level
 function make_game_manager()
 	local gm={}
-	local death_screen_timer=make_timer(60)
-	local win_timer=make_timer(60)
+	local transition_timer=make_timer(60)
 	local spawn_timer=make_timer(20)
 	gm.txt_blink_i=0
 	gm.txt_blink=false
@@ -68,7 +67,7 @@ function make_game_manager()
 	--5	restart
 	--6	main menu
 	--7	end screen
-	--8	transition to main menu
+	--8	tutorial
 	gm.state=6
 
 	--change level
@@ -238,7 +237,45 @@ function make_game_manager()
 		print(author,hcenter(author),112,9)
 
 		if btn(5) then
-			if not win_timer.started or win_timer.finished then
+			if not transition_timer.started or transition_timer.finished then
+				transition_timer:reset()
+				transition_timer:start()
+				self.state=8
+			end
+		end
+	end
+
+	
+	gm.tutorial=function(self)
+		if self.txt_blink_i>30 then
+			self.txt_blink=not self.txt_blink
+			self.txt_blink_i=0
+		end
+		self.txt_blink_i+=1
+
+		local title="tutorial"
+		print(title,hcenter(title),264,9)
+		local continue="press \x97 to continue"
+		print("slashable",0,288,3)
+		spr(13,12,304,1,1)--skeleton
+		spr(48,12,320,1,1)--spider
+		spr(52,12,336,1,1)--bat
+
+		local danger="danger"
+		print(danger,hcenter(danger),288,4)
+		spr(57,60,304,1,1)--ghost danger
+		spr(58,60,320,1,1)--ghost danger
+		spr(59,60,336,1,1)--ghost danger
+		spr(60,60,350,1,1)--ghost danger
+
+		print("safe",94,288,5)
+		spr(61,98,304,1,1)--ghost safe
+		if self.txt_blink then
+			print(continue,hcenter(continue),376,7)
+		end
+
+		if btn(5) then
+			if not transition_timer.started or transition_timer.finished then
 				gm:set_level(0)
 				self.state=0
 			end
@@ -268,8 +305,8 @@ function make_game_manager()
 		print(author,52,112,9)
 
 		if btn(5) then
-			win_timer:reset()
-			win_timer:start()
+			transition_timer:reset()
+			transition_timer:start()
 			self.state=6
 		end
 	end
@@ -294,7 +331,7 @@ function make_game_manager()
 
 	--update game state machine
 	gm.state_update=function(self)
-		if self.state==0 then
+		if self.state==0 then--playing
 			if not self.player.is_alive then
 				sfx(snd.death)
 				self.state=1
@@ -303,13 +340,13 @@ function make_game_manager()
 			if self.player.is_spawning and spawn_timer.finished then
 				self.player.is_spawning=false
 			end
-		elseif self.state==1 then
+		elseif self.state==1 then--player death
 			self.state=2
-			death_screen_timer:reset()
-			death_screen_timer:start()
-		elseif self.state==2 and death_screen_timer.finished then
+			transition_timer:reset()
+			transition_timer:start()
+		elseif self.state==2 and transition_timer.finished then--transition from death
 			self.state=3
-		elseif self.state==5 then
+		elseif self.state==5 then--restart
 			self:set_level(self.c_level)
 		end
 	end
@@ -317,18 +354,21 @@ function make_game_manager()
 
 	--update game draw state machine
 	gm.state_draw=function(self)
-		if self.state==0 then
+		if self.state==0 then--playing
 			return
-		elseif self.state==1 then
+		elseif self.state==1 then--player death
 			self:flash_screen()
-		elseif self.state==2 then
+		elseif self.state==2 then--transition from death
 			return
-		elseif self.state==3 then
+		elseif self.state==3 then--death screen
 			self:death_screen()
-		elseif self.state==6 then
+		elseif self.state==6 then--menu
 			self:main_menu()
-		elseif self.state==7 then
+		elseif self.state==7 then--ending
 			self:ending()
+		elseif self.state==8 then--tutorial
+			camera(0,256)
+			self:tutorial()
 		end
 	end
 
@@ -343,13 +383,10 @@ function make_game_manager()
 		self:state_update()
 
 		--timer
-		death_screen_timer:update()
-		win_timer:update()
+		transition_timer:update()
 		spawn_timer:update()
 
-		if self.state==6 or self.state==7 then 
-			return
-		end
+		if (self.state==6 or self.state==7 or self.state==8)return
 
 		--player
 		self.player:update()
@@ -403,7 +440,7 @@ function make_game_manager()
 		--gm state management
 		self:state_draw()
 
-		if (self.state==3 or self.state==6 or self.state==7) return
+		if (self.state==3 or self.state==6 or self.state==7 or self.state==8) return
 
 		print(stat(0),self.cam_x+10,self.cam_y+8)
 		print(stat(1),self.cam_x+10,self.cam_y+16)
@@ -1454,7 +1491,7 @@ __map__
 1000000000000000000000000000001010000000000000000000000000000010101b1c6e6f00006e6f1b1c6e6f00001010111212141011121212131400000010100000001710001010101010000000101000000000000000000000000000001010000000000000000000000000000010101b1f000000101000006e6f00000010
 10000000000000001a00121212146e6f100000001500001500001500006e6f6e6f00007e7f00007e7f00007e7f000010100000000000000000000000001a0010100000000000000000101700000000101011000015000015000000000000001010000000000000000000000000000010100000000000101000007e7f00000010
 1000000000001a000000000000007e7f100000000000000000000000007e7f7e7f00006e6f00006e6f00006e6f0000101000000000000000000000000000001010000000000000000000000000000010101500000000000000000000000000101010000000000000000000000000001010000000000000000000000000000010
-10000000000000000000000000000010101b1f00000000000000000000000010101b1c7e7f00007e7f1b1c7e7f0000101000001a14161116101011121314101010000000000000000000000000000010100000000000000000150000000000101010100000000000000000000000001010000000000000000000000000000010
+10000000000000000000000000000010101b1f00000000000000000000000010101b1c7e7f00007e7f1b1c7e7f0000101000001a14101116101611121314101010000000000000000000000000000010100000000000000000150000000000101010100000000000000000000000001010000000000000000000000000000010
 101b1d1d1d1d1f000000000000000010100000000000000000000000000000101000006e6f00006e6f00006e6f00001010000000101010101010101010101010100000000000000000000000000000101000000000000000000000000000001010101010000000000000000000000010100000001e1c6e6f00006e6f00000010
 10000000000000000000000000000010101000000000000000000000000000101000007e7f00007e7f00007e7f00001010001a000000000000000000000000101000000000000000000000000000001010000000000000000000001e1d1d1c10101010101000000000000000000000101000000000007e7f00007e7f00000010
 10000000000000000000000000000010106e6f00000000000000000000000010101b1c6e6f00006e6f1b1c6e6f000010100000000000000000000000000000101000000000000000000000000000001010000000000000000000000000000010101010101010000000000000000000101000000000006e6f0000101000000010
