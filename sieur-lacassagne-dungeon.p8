@@ -43,8 +43,7 @@ end
 --Manage level
 function make_game_manager()
 	local gm={}
-	local death_screen_timer=make_timer(60)
-	local win_timer=make_timer(60)
+	local transition_timer=make_timer(60)
 	local spawn_timer=make_timer(20)
 	gm.txt_blink_i=0
 	gm.txt_blink=false
@@ -238,7 +237,30 @@ function make_game_manager()
 		print(author,hcenter(author),112,9)
 
 		if btn(5) then
-			if not win_timer.started or win_timer.finished then
+			if not transition_timer.started or transition_timer.finished then
+				gm:set_level(0)
+				self.state=0
+			end
+		end
+	end
+
+	
+	gm.tutorial=function(self)
+		if self.txt_blink_i>30 then
+			self.txt_blink=not self.txt_blink
+			self.txt_blink_i=0
+		end
+		self.txt_blink_i+=1
+
+		local title="tutorial"
+		local continue="press \x97 to continue"
+		spr(32,22,21,3,1)
+		if self.txt_blink then
+			print(continue,hcenter(continue),68,7)
+		end
+
+		if btn(5) then
+			if not transition_timer.started or transition_timer.finished then
 				gm:set_level(0)
 				self.state=0
 			end
@@ -268,8 +290,8 @@ function make_game_manager()
 		print(author,52,112,9)
 
 		if btn(5) then
-			win_timer:reset()
-			win_timer:start()
+			transition_timer:reset()
+			transition_timer:start()
 			self.state=6
 		end
 	end
@@ -305,9 +327,9 @@ function make_game_manager()
 			end
 		elseif self.state==1 then
 			self.state=2
-			death_screen_timer:reset()
-			death_screen_timer:start()
-		elseif self.state==2 and death_screen_timer.finished then
+			transition_timer:reset()
+			transition_timer:start()
+		elseif self.state==2 and transition_timer.finished then
 			self.state=3
 		elseif self.state==5 then
 			self:set_level(self.c_level)
@@ -343,8 +365,7 @@ function make_game_manager()
 		self:state_update()
 
 		--timer
-		death_screen_timer:update()
-		win_timer:update()
+		transition_timer:update()
 		spawn_timer:update()
 
 		if self.state==6 or self.state==7 then 
