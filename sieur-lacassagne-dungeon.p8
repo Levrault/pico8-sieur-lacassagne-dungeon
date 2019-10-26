@@ -1,8 +1,10 @@
 pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
-
 --main
+-- Sieur Lacassagne Dungeon
+-- A devtober game by Levrault
+-- Music: Dungeon by Gruber from Pico-8 tunes volume 1
 --FLAG
 --	0 block
 --	1 oneway platform
@@ -26,7 +28,7 @@ function _init()
 	music(0)
 	gm=make_game_manager()
 	gm:main_menu()
-	-- gm:set_level(4
+	-- gm:set_level(4)
 end
 
 function _update60()
@@ -40,16 +42,34 @@ function _draw()
 end
 
 
---Manage level
+--Global Game Manager
+--Will control menu, death, camera
+--and level change
+--Game state values:
+--0	playing
+--1 player death
+--2	transition_death
+--3	death_screen
+--4	game_over
+--5	restart
+--6	main menu
+--7	end screen
+--8	tutorial
 function make_game_manager()
 	local gm={}
 	local transition_timer=make_timer(60)
 	local spawn_timer=make_timer(20)
+
+	--text
 	gm.txt_blink_i=0
 	gm.txt_blink=false
+
+	--instance
 	gm.player={}
 	gm.coin={}
 	gm.kills={}
+
+	--level
 	gm.c_level=0
 	gm.cam_x=0
 	gm.cam_y=0
@@ -59,6 +79,7 @@ function make_game_manager()
 	gm.d_cam_y=0
 	gm.cam_speed=2
 
+	--Game states
 	--0	playing
 	--1 player death
 	--2	transition_death
@@ -73,23 +94,23 @@ function make_game_manager()
 	--change level
 	--@param level level number
 	gm.set_level=function(self,level)
+		--reset player spawn
 		spawn_timer:reset()
 		spawn_timer:start()
-		enemies={}
+
+		--delete previous instance
 		self.state=0
 		self.c_level=level
-		del(self, kills)
+		del(self,kills)
 		del(self,self.player)
-		self.kills={}
-		sfx(snd.coin)
-
 		for enemy in all(enemies) do
 			del(enemies,enemy)
 		end
 
-		if level!=0 then
-			self.change_level=true
-		end
+		--effect
+		sfx(snd.coin)
+
+		if (level!=0) self.change_level=true
 
 		if level==0 then--x[0,128] y[0,128]
 			self.cam_x=0
@@ -100,7 +121,6 @@ function make_game_manager()
 			add(enemies,make_skeleton(60,116))
 			self.coin=make_coin(116,28)
 			self.player=make_player(12,120)
-
 		elseif level==1 then--x[128,256] y[0,128]
 			self.d_cam_x=128
 			self.d_cam_y=0
@@ -213,18 +233,22 @@ function make_game_manager()
 
 			self.state=7
 			gm:ending()
-
 		end
 	end
 
-
-	--main menu
-	gm.main_menu=function(self)
+	--text blink index
+	gm.blink_text=function(self)
 		if self.txt_blink_i>30 then
 			self.txt_blink=not self.txt_blink
 			self.txt_blink_i=0
 		end
 		self.txt_blink_i+=1
+	end
+
+
+	--display main menu
+	gm.main_menu=function(self)
+		self:blink_text()
 
 		local author="by levrault"
 		local new_game="press \x97 to start a new game"
@@ -247,12 +271,9 @@ function make_game_manager()
 	end
 
 	
+	--should display tutorial
 	gm.tutorial=function(self)
-		if self.txt_blink_i>30 then
-			self.txt_blink=not self.txt_blink
-			self.txt_blink_i=0
-		end
-		self.txt_blink_i+=1
+		self:blink_text()
 
 		local title="tutorial"
 		print(title,hcenter(title),264,9)
@@ -284,13 +305,10 @@ function make_game_manager()
 	end
 
 
-	--ending screen
+	--should display ending screen
 	gm.ending=function(self)
-		if self.txt_blink_i>30 then
-			self.txt_blink=not self.txt_blink
-			self.txt_blink_i=0
-		end
-		self.txt_blink_i+=1
+		self:blink_text()
+
 		local title="you win!"
 		local screen="press \x97 to go to main menu"
 		local thanks="thanks for playing!"
@@ -376,6 +394,7 @@ function make_game_manager()
 
 	--update game loop
 	gm.update=function(self)
+		--update only when camara is on the right position
 		if self.cam_x!=self.d_cam_x or self.cam_y!=self.d_cam_y then
 			return
 		end
@@ -387,7 +406,8 @@ function make_game_manager()
 		transition_timer:update()
 		spawn_timer:update()
 
-		if (self.state==6 or self.state==7 or self.state==8)return
+		--ui state
+		if (self.state==6 or self.state==7 or self.state==8) return
 
 		--player
 		self.player:update()
@@ -407,6 +427,7 @@ function make_game_manager()
 			enemy:update()
 		end
 
+		--update remaining explosion
 		for explosion in all(explosions) do
 			explosion:update()
 		end
@@ -415,6 +436,7 @@ function make_game_manager()
 
 	--update graphics
 	gm.draw=function(self)
+		--camera management
 		if self.cam_x<self.d_cam_x then
 			self.cam_x+=self.cam_speed
 			camera(self.cam_x, self.cam_y)
