@@ -30,7 +30,7 @@ That's how I ended up working and discovering the fabulous [Pico 8](https://www.
 
 That how **Sieur Lacassagne Dungeon** was created.
 
-![sieur lacassagne](C:/Users/Luc/AppData/Roaming/pico-8/carts/pico8-sieur-lacassagne/images/sieur-lacassagne-main-menu.png)
+![sieur lacassagne](./images/sieur-lacassagne-main-menu.png)
 
 
 
@@ -74,7 +74,7 @@ Even the pixel art was pretty fast to create. I know, my sprites are only 8x8, b
 
 
 
-![gameplay 30fps](C:/Users/Luc/AppData/Roaming/pico-8/carts/pico8-sieur-lacassagne/images/gameplay-30fps.gif)
+![gameplay 30fps](./images/gameplay-30fps.gif)
 
 
 
@@ -82,6 +82,6 @@ Even the pixel art was pretty fast to create. I know, my sprites are only 8x8, b
 
 I'm going back working on [Maximilien adventure](https://github.com/Levrault/godot-maximilien-adventure) a game made with the [Godot engine](https://godotengine.org/) for my nephew Maximilien. There nothing to say about it, I don't think I will improve Sieur Lacassagne Dungeon but I'm certainly gonna re-work with Pico 8 for my next game jam. 
 
-![godot maximilien adventure](C:/Users/Luc/AppData/Roaming/pico-8/carts/pico8-sieur-lacassagne/images/maximilien-adventure.png)
+![godot maximilien adventure](./images/maximilien-adventure.png)
 
 This experience was great and let me experience some shorts development times for games, something that I have never done before.
