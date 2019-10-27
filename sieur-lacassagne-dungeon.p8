@@ -1,6 +1,9 @@
 pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
+-- sieur lacassagne dungeon
+-- by levrault
+
 --main
 -- Sieur Lacassagne Dungeon
 -- A devtober game by Levrault
