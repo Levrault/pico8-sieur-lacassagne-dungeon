@@ -662,7 +662,7 @@ function make_player(px,py)
 	},"idle")
 	local hitbox=make_hitbox(11,11)
 	local hurtbox=make_hurtbox(4,4)
-	local cooldown=make_timer(30)
+	local cooldown=make_timer(20)
 	
 	--player states
 	p.can_attack=true
