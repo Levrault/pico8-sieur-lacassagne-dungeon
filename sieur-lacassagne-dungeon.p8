@@ -319,8 +319,8 @@ function make_game_manager()
 		print("\x91",936,416,11)--right arrow
 		print("\x94",928,408,5)--up arrow
 		print("\x83",928,424,5)--down arrow
-		print("\x97",980,420,8)--x button
-		print("\x8E",992,416,12)--o button
+		print("\x97",980,420,12)--x button
+		print("\x8E",992,416,8)--o button
 		print("\x82",957,431,5)--start button
 
 		--command
@@ -329,10 +329,10 @@ function make_game_manager()
 		local move = "move - arrow keys"
 		print(move,(896+hcenter(move)),464,11)
 
-		local attack = "attack - x"
+		local attack = "jump - x"
 		print(attack,(896+hcenter(attack)),472,8)
 
-		local jump = "jump - c"
+		local jump = "attacj - c"
 		print(jump,(896+hcenter(jump)),480,12)
 
 		if self.txt_blink then
