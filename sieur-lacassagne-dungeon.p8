@@ -253,6 +253,30 @@ function make_game_manager()
 
 
 	gm.storyboard=function(self)
+		self:blink_text()
+		local title="story"
+		print(title,(896+hcenter(title)),384,9)
+		print("they were once a knight who was",896,392,6)
+		print("lost in a dungeon with some",896,400)
+		print("stranges creatures.",896,408)
+		print("horrible spiders, skeletons",896,424)
+		print("bats and those horribles ghosts",896,432)
+		print("that we can not hurt but only",896,440)
+		print("evade.",896,448)
+		print("a advice, watch their eyes.",896,464,8)
+		print("help the young knight escape",896,480,6)
+
+		if self.txt_blink then
+			local continue="press \x97 to continue"
+			print(continue,(896+hcenter(continue)),502,7)
+		end
+
+		if btn(5) then
+			if not transition_timer.started or transition_timer.finished then
+				self:set_level(0)
+				self.state=0
+			end
+		end
 	end
 
 
@@ -318,8 +342,9 @@ function make_game_manager()
 
 		if btn(5) then
 			if not transition_timer.started or transition_timer.finished then
-				gm:set_level(0)
-				self.state=0
+				transition_timer:reset()
+				transition_timer:start()
+				self.state=9
 			end
 		end
 	end
@@ -408,6 +433,9 @@ function make_game_manager()
 		elseif self.state==8 then--tutorial
 			camera(896,384)
 			self:tutorial()
+		elseif self.state==9 then--restart
+			camera(896,384)
+			self:storyboard()
 		end
 	end
 
@@ -427,7 +455,7 @@ function make_game_manager()
 		spawn_timer:update()
 
 		--ui state
-		if (self.state==6 or self.state==7 or self.state==8) return
+		if (self.state==6 or self.state==7 or self.state==8 or self.state==9) return
 
 		--player
 		self.player:update()
@@ -483,7 +511,7 @@ function make_game_manager()
 		--gm state management
 		self:state_draw()
 
-		if (self.state==3 or self.state==6 or self.state==7 or self.state==8) return
+		if (self.state==3 or self.state==6 or self.state==7 or self.state==8 or self.state==9) return
 
 		-- print(stat(0),self.cam_x+10,self.cam_y+8)
 		-- print(stat(1),self.cam_x+10,self.cam_y+16)
