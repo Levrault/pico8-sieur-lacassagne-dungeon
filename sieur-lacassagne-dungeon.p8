@@ -28,10 +28,10 @@ snd={
 }
 
 function _init()
-	music(0)
+	-- music(0)
 	gm=make_game_manager()
-	-- gm:main_menu()
-	gm:set_level(18)
+	gm:main_menu()
+	-- gm:set_level(18)
 end
 
 function _update60()
@@ -350,7 +350,6 @@ function make_game_manager()
 		print("evade.",896,448)
 		print("a advice, watch their eyes.",896,464,8)
 		print("help the young knight escape",896,480,6)
-
 		if self.txt_blink then
 			local continue="press \x97 to continue"
 			print(continue,(896+hcenter(continue)),502,7)
@@ -796,8 +795,9 @@ function make_player(px,py)
 		}
 	},"idle")
 	local hitbox=make_hitbox(12,12)
-	local hurtbox=make_hurtbox(4,4)
 	local cooldown=make_timer(20)
+
+	p.hurtbox=make_hurtbox(4,4)
 	
 	--player states
 	p.can_attack=true
@@ -988,7 +988,7 @@ function make_player(px,py)
 		--update animation player
 		ap:play()
 
-		hurtbox:update(self.x,self.y)
+		self.hurtbox:update(self.x,self.y)
 		if self.slash_active and self.is_alive then
 			slash_ap:play()
 			hitbox:update(self.x,self.y)
@@ -1007,7 +1007,7 @@ function make_player(px,py)
 
 		--player
 		ap:draw(x,y,self.w,self.h,fx)
-		-- hurtbox:draw(x,y)
+		-- self.hurtbox:draw(x,y)
 
 		--slash
 		if self.slash_active and self.is_alive then
@@ -1260,8 +1260,8 @@ function make_coin(px,py)
 	--check if player is in the coin's rect collision
 	c.update=function(self,player)
 		ap:play()
-		local box=get_rect(px,py,8,8)
-		local pbox=player:rect()
+		local box=get_rect(px,py,4,4)
+		local pbox=player.hurtbox:rect(player.x, player.y)
 		local x0=pbox.x0
 		local y0=pbox.y0
 		local x1=pbox.x1
@@ -1282,6 +1282,8 @@ function make_coin(px,py)
 	--update graphics
 	c.draw=function(self)
 		ap:draw(px,py,8,8)
+		-- local box=get_rect(px,py,3,3)
+		-- rect(box.x0, box.y0, box.x1, box.y1, 7)
 	end
 
 	return c
@@ -1499,6 +1501,10 @@ function make_hurtbox(w,h)
 	hub.draw=function(self,x,y)
 		local r=get_rect(x,y,self.w,self.h)
 		rect(r.x0,r.y0,r.x1,r.y1)
+	end
+
+	hub.rect=function(self,x,y)
+		return get_rect(x,y,self.w,self.h)
 	end
 	
 	return hub
