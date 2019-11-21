@@ -31,7 +31,7 @@ function _init()
 	-- music(0)
 	gm=make_game_manager()
 	gm:main_menu()
-	-- gm:set_level(18)
+	-- gm:set_level(15)
 end
 
 function _update60()
@@ -1039,7 +1039,7 @@ function make_enemy(name,w,h,px,py,hu,anims)
 
 	--should detect pike nearby
 	e.patrol=function(self)
-		if self:collide_side() or self:detect_edge() then
+		if self:collide_side() or self:detect_edge() or self:detect_trap() then
 			self.lx*=-1
 		end
 		
@@ -1056,6 +1056,14 @@ function make_enemy(name,w,h,px,py,hu,anims)
 		local celx=(self.x+(self.lx*(self.w/2)))/8
 		local cely=(self.y+(self.h/2))/8
 		return mget(celx,cely) == 0
+	end
+
+	--detect trap
+	--@return bool check x+(look_direction*8), y-8
+	e.detect_trap=function(self)
+		local celx=(self.x+(self.lx*(self.w/2)))/8
+		local cely=(self.y+(self.h/2))/8
+		return fget(mget(celx,cely),2)
 	end
 
 	--update
