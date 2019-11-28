@@ -28,10 +28,10 @@ snd={
 }
 
 function _init()
-	-- music(0)
+	music(0)
 	gm=make_game_manager()
 	gm:main_menu()
-	-- gm:set_level(15)
+	-- gm:set_level(13)
 end
 
 function _update60()
@@ -80,7 +80,7 @@ function make_game_manager()
 	gm.cam_y=0
 	gm.d_cam_x=0
 	gm.d_cam_y=0
-	gm.cam_speed=2
+	gm.cam_speed=32
 
 	--Game states
 	--0	playing
@@ -248,7 +248,18 @@ function make_game_manager()
 			add(enemies,make_spider(450,244))
 			self.coin=make_coin(500,148)
 			self.player=make_player(396,150)
-		elseif level==13 then--x[128,256] y[128,256]
+		elseif level==13 then--x[256,384] y[128,256]
+			self.d_cam_x=256
+			self.d_cam_y=128
+
+			add(enemies,make_ghost(284,178))
+			add(enemies,make_ghost(356,178))
+			add(enemies,make_spider(264,236))
+			add(enemies,make_spider(364,236))
+
+			self.coin=make_coin(320,146)
+			self.player=make_player(320,244)
+		elseif level==14 then--x[128,256] y[128,256]
 			self.d_cam_x=128
 			self.d_cam_y=128
 
@@ -256,7 +267,7 @@ function make_game_manager()
 			add(enemies,make_skeleton(197,156))
 			self.coin=make_coin(244,180)
 			self.player=make_player(140,212)
-		elseif level==14 then--x[0,128] y[128,256]
+		elseif level==15 then--x[0,128] y[128,256]
 			self.d_cam_x=0
 			self.d_cam_y=128
 
@@ -265,7 +276,7 @@ function make_game_manager()
 			add(enemies,make_ghost(44,180))
 			self.coin=make_coin(116,148)
 			self.player=make_player(16,180)
-		elseif level==15 then--x[0,128] y[256,384]
+		elseif level==16 then--x[0,128] y[256,384]
 			self.d_cam_x=0
 			self.d_cam_y=256
 
@@ -287,7 +298,7 @@ function make_game_manager()
 
 			self.coin=make_coin(116,372)
 			self.player=make_player(12,276)
-		elseif level==16 then--x[128,256] y[256,384]
+		elseif level==17 then--x[128,256] y[256,384]
 			self.d_cam_x=128
 			self.d_cam_y=256
 
@@ -300,7 +311,7 @@ function make_game_manager()
 
 			self.coin=make_coin(244,300)
 			self.player=make_player(140,300)
-		elseif level==17 then--x[256,384] y[256,384]
+		elseif level==18 then--x[256,384] y[256,384]
 			self.d_cam_x=256
 			self.d_cam_y=256
 
@@ -309,13 +320,13 @@ function make_game_manager()
 
 			self.coin=make_coin(372,276)
 			self.player=make_player(270,316)
-		elseif level==18 then--x[384,512] y[256,384]
+		elseif level==19 then--x[384,512] y[256,384]
 			self.d_cam_x=384
 			self.d_cam_y=256
 
 			self.coin=make_coin(500,308)
 			self.player=make_player(396,308)
-		elseif level==19 then--x[384,512] y[256,384]
+		elseif level==20 then--x[384,512] y[256,384]
 			self.cam_x=0
 			self.cam_y=0
 			self.d_cam_x=0
