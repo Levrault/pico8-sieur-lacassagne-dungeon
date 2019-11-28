@@ -31,7 +31,7 @@ function _init()
 	music(0)
 	gm=make_game_manager()
 	gm:main_menu()
-	-- gm:set_level(13)
+	-- gm:set_level(15)
 end
 
 function _update60()
@@ -80,7 +80,7 @@ function make_game_manager()
 	gm.cam_y=0
 	gm.d_cam_x=0
 	gm.d_cam_y=0
-	gm.cam_speed=32
+	gm.cam_speed=2
 
 	--Game states
 	--0	playing
@@ -275,7 +275,7 @@ function make_game_manager()
 			add(enemies,make_spider(56,156))
 			add(enemies,make_ghost(44,180))
 			self.coin=make_coin(116,148)
-			self.player=make_player(16,180)
+			self.player=make_player(76,180)
 		elseif level==16 then--x[0,128] y[256,384]
 			self.d_cam_x=0
 			self.d_cam_y=256
